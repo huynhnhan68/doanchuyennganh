@@ -15,10 +15,8 @@ export default function handler(req, res) {
 
   const { amount, orderId, bankCode } = req.body;
 
-  // Lấy IP của client
   const ipAddr = req.headers["x-forwarded-for"] || "127.0.0.1";
 
-  // Format ngày
   const createDate = new Date()
     .toISOString()
     .replace(/[-T:.Z]/g, "")
@@ -41,14 +39,12 @@ export default function handler(req, res) {
 
   if (bankCode) vnp_Params.vnp_BankCode = bankCode;
 
-  // Sort Alphabet
   const sorted = Object.keys(vnp_Params)
     .sort()
     .reduce((acc, key) => ({ ...acc, [key]: vnp_Params[key] }), {});
 
   const signData = qs.stringify(sorted, { encode: false });
 
-  // Create HMAC SHA512
   const hmac = crypto.createHmac("sha512", VNP_HASH_SECRET);
   const signature = hmac.update(signData).digest("hex");
 
