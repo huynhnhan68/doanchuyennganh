@@ -1,60 +1,38 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Thanh toán VNPay (giả lập)</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="utf-8">
+<title>Đang xử lý thanh toán...</title>
 </head>
-<body class="bg-light">
-<div class="container py-5">
-  <div class="card mx-auto" style="max-width:640px">
-    <div class="card-header bg-primary text-white"><i class="fa fa-credit-card me-2"></i>VNPay (giả lập)</div>
-    <div class="card-body">
-      <div id="sum" class="h5 mb-3">Đang tính...</div>
-      <button id="pay" class="btn btn-primary w-100"><i class="fa fa-check me-1"></i>Xác nhận thanh toán</button>
-      <div id="msg" class="small text-muted mt-3"></div>
-      <div class="text-end mt-3"><a href="cart.html" class="text-decoration-none">← Quay lại giỏ hàng</a></div>
-    </div>
-  </div>
-</div>
+<body style="font-family:sans-serif;text-align:center;margin-top:80px">
 
-<script type="module">
-import { supabase, VND, requireBuyer, txCode } from './buyer.js';
-const u=requireBuyer(); if(!u) throw new Error('no user');
+<h2>🔄 Đang xác nhận thanh toán VNPay...</h2>
+<p>Vui lòng chờ vài giây...</p>
 
-let items=[], sub=0;
-async function load(){
-  const r=await supabase.from('cart_items').select('*').eq('user_id', u.user_id);
-  items=r.data||[];
-  sub = items.reduce((s,x)=>s+Number(x.price)*Number(x.quantity),0);
-  document.getElementById('sum').textContent='Tổng thanh toán: '+VND(sub);
-}
+<script>
+(async () => {
 
-document.getElementById('pay').onclick = async ()=>{
-  if(!items.length) return document.getElementById('msg').textContent='Giỏ hàng trống.';
-  document.getElementById('pay').disabled=true; document.getElementById('msg').textContent='Đang tạo đơn hàng...';
-  const byStore = items.reduce((m,x)=>{ (m[x.store_id]=m[x.store_id]||[]).push(x); return m; }, {});
-  const createdOrders=[];
-  for(const [store_id, arr] of Object.entries(byStore)){
-    const total = arr.reduce((s,x)=>s+Number(x.price)*Number(x.quantity),0);
-    const ins = await supabase.from('orders').insert([{ store_id:Number(store_id), buyer_id:u.user_id, total_price: total, order_status:'confirmed', created_at: new Date().toISOString() }]).select('order_id').single();
-    if(ins.error) return document.getElementById('msg').textContent='Lỗi tạo đơn: '+ins.error.message;
-    const order_id=ins.data.order_id;
-    const rows = arr.map(x=>({order_id, product_id:x.product_id, product_name:x.product_name||'', price:x.price, quantity:x.quantity}));
-    await supabase.from('order_items').insert(rows);
-    const tx=txCode('VNP');
-    await supabase.from('payments').insert([{ order_id, amount: total, method:'vnpay', transaction_code: tx, status:'completed', created_at: new Date().toISOString() }]);
-    createdOrders.push(order_id);
+  const params = new URLSearchParams(location.search);
+
+  // Gọi API để xử lý IPN phía server
+  const apiURL = "https://doanchuyennganh-v2py.vercel.app/api/vnpay_ipn";
+
+  const res = await fetch(apiURL + "?" + params.toString());
+  const data = await res.json();
+
+  console.log("IPN result:", data);
+
+  // Xử lý kết quả
+  if (data.RspCode === "00") {
+    alert("Thanh toán thành công!");
+    location.href = "orders.html";
+  } else {
+    alert("Thanh toán thất bại: " + data.Message);
+    location.href = "orders.html";
   }
-  await supabase.from('cart_items').delete().eq('user_id', u.user_id);
-  document.getElementById('msg').innerHTML = 'Thanh toán thành công. Đã tạo đơn: ' + createdOrders.map(id=>'#'+id).join(', ') + '. <a href="orders.html">Xem đơn của tôi</a>';
-};
 
-await load();
+})();
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
