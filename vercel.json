@@ -1,10 +1,18 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "api/*.js", "use": "@vercel/node" }
-  ],
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "routes": [
-    { "src": "/api/vnpay_create_payment", "dest": "/api/vnpay_create_payment.js" },
-    { "src": "/api/vnpay_ipn", "dest": "/api/vnpay_ipn.js" }
+    {
+      "src": "/api/vnpay_create_payment",
+      "dest": "/api/vnpay_create_payment.js"
+    },
+    {
+      "src": "/api/vnpay_ipn",
+      "dest": "/api/vnpay_ipn.js"
+    }
   ]
 }
