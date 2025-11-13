@@ -1,0 +1,10 @@
+{
+  "name": "eshop-vnpay",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "qs": "6.11.2",
+    "@vercel/node": "2.16.1",
+    "@supabase/supabase-js": "2.39.0"
+  }
+}
